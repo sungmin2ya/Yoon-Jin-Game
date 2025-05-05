@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>서윤이와 서진이의 과일 모험</title>
   <style>
     body {
@@ -13,41 +14,42 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-top: 20px;
+      padding-top: 10px;
     }
     #title {
       font-size: 2rem;
       font-weight: bold;
       color: #d81b60;
       text-shadow: 1px 1px 2px #ffffff;
-      margin-bottom: 10px;
+      margin-bottom: 5px;
     }
     #scoreBoard {
       font-size: 1.2rem;
       color: #4a148c;
-      margin-bottom: 10px;
+      margin-bottom: 5px;
     }
     canvas {
       border: 5px solid #f06292;
       background: #fff0f5;
       display: block;
-      margin: 0 auto;
+      width: 90vw;
+      height: 90vw;
+      max-width: 480px;
+      max-height: 480px;
     }
-    #bottomBar {
-      position: fixed;
-      bottom: 10px;
-      width: 100%;
+    #controlPanel {
       display: flex;
       justify-content: space-between;
-      padding: 0 20px;
-      box-sizing: border-box;
-      z-index: 10;
+      align-items: flex-start;
+      width: 90vw;
+      max-width: 480px;
+      margin-top: 10px;
     }
     #leftControls {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: 10px;
+      gap: 5px;
     }
     #characterSelect {
       display: flex;
@@ -64,8 +66,8 @@
       border-color: #f06292;
     }
     #playMusic, #restartGame {
-      font-size: 1rem;
-      padding: 5px 10px;
+      font-size: 0.9rem;
+      padding: 4px 8px;
       background-color: #f8bbd0;
       border: none;
       border-radius: 5px;
@@ -81,9 +83,9 @@
       gap: 5px;
     }
     .arrowBtn {
-      width: 50px;
-      height: 50px;
-      font-size: 24px;
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
       text-align: center;
       background-color: #f06292;
       color: white;
@@ -101,22 +103,21 @@
     <div id="title">🍓 서윤이와 서진이의 과일 모험 🍇</div>
     <div id="scoreBoard">점수: 0 | 먹은 과일: 0개</div>
     <canvas id="gameCanvas" width="480" height="480"></canvas>
-  </div>
-
-  <div id="bottomBar">
-    <div id="leftControls">
-      <div id="characterSelect">
-        <img src="seoyoon_player.png" alt="서윤이" onclick="selectCharacter('seoyoon_player.png')">
-        <img src="seojin_player.png" alt="서진이" onclick="selectCharacter('seojin_player.png')">
+    <div id="controlPanel">
+      <div id="leftControls">
+        <div id="characterSelect">
+          <img src="seoyoon_player.png" alt="서윤이" onclick="selectCharacter('seoyoon_player.png')">
+          <img src="seojin_player.png" alt="서진이" onclick="selectCharacter('seojin_player.png')">
+        </div>
+        <button id="playMusic">🎵 음악 켜기</button>
+        <button id="restartGame">🔁 게임 다시 시작</button>
       </div>
-      <button id="playMusic">🎵 음악 켜기</button>
-      <button id="restartGame">🔁 게임 다시 시작</button>
-    </div>
-    <div id="touchControls">
-      <button class="arrowBtn up" onclick="movePlayer(0,-1)">⬆️</button>
-      <button class="arrowBtn left" onclick="movePlayer(-1,0)">⬅️</button>
-      <button class="arrowBtn right" onclick="movePlayer(1,0)">➡️</button>
-      <button class="arrowBtn down" onclick="movePlayer(0,1)">⬇️</button>
+      <div id="touchControls">
+        <button class="arrowBtn up" onclick="movePlayer(0,-1)">⬆️</button>
+        <button class="arrowBtn left" onclick="movePlayer(-1,0)">⬅️</button>
+        <button class="arrowBtn right" onclick="movePlayer(1,0)">➡️</button>
+        <button class="arrowBtn down" onclick="movePlayer(0,1)">⬇️</button>
+      </div>
     </div>
   </div>
 <audio id="bgm" src="backgroundmusic.mp3" loop></audio>
@@ -172,73 +173,73 @@
   }
 
   function generateMaze(rows, cols) {
-  let maze;
-  const isValidMaze = (maze) => {
+    let maze;
+    const isValidMaze = (maze) => {
+      const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+      const queue = [[1, 1]];
+      visited[1][1] = true;
+      const directions = [[1,0],[-1,0],[0,1],[0,-1]];
+      let reachable = 0;
+
+      while (queue.length) {
+        const [y, x] = queue.shift();
+        if (maze[y][x] === '.') reachable++;
+        for (let [dy, dx] of directions) {
+          const ny = y + dy, nx = x + dx;
+          if (ny >= 0 && ny < rows && nx >= 0 && nx < cols && !visited[ny][nx] && maze[ny][nx] !== '#') {
+            visited[ny][nx] = true;
+            queue.push([ny, nx]);
+          }
+        }
+      }
+
+      const totalPath = maze.flatMap(row => row.split('')).filter(c => c === '.').length;
+      return reachable === totalPath && reachable > 0;
+    };
+
+    do {
+      maze = [];
+      for (let y = 0; y < rows; y++) {
+        let row = "";
+        for (let x = 0; x < cols; x++) {
+          row += (y === 0 || y === rows - 1 || x === 0 || x === cols - 1) ? "#" : (Math.random() < 0.25 ? "#" : ".");
+        }
+        maze.push(row);
+      }
+      maze[1] = maze[1].substring(0, 1) + '.' + maze[1].substring(2);
+    } while (!isValidMaze(maze));
+
+    return maze;
+  }
+
+  function placeFruits(maze, count = 8) {
+    totalFruits = count;
+    let placed = 0;
+    const directions = [[1,0],[-1,0],[0,1],[0,-1]];
     const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+    const reachable = [];
     const queue = [[1, 1]];
     visited[1][1] = true;
-    const directions = [[1,0],[-1,0],[0,1],[0,-1]];
-    let reachable = 0;
 
     while (queue.length) {
       const [y, x] = queue.shift();
-      if (maze[y][x] === '.') reachable++;
+      if (maze[y][x] === '.') reachable.push([y, x]);
       for (let [dy, dx] of directions) {
         const ny = y + dy, nx = x + dx;
-        if (ny >= 0 && ny < rows && nx >= 0 && nx < cols && !visited[ny][nx] && maze[ny][nx] !== '#') {
+        if (ny >= 0 && ny < rows && nx >= 0 && nx < cols && !visited[ny][nx] && maze[ny][nx] === '.') {
           visited[ny][nx] = true;
           queue.push([ny, nx]);
         }
       }
     }
 
-    const totalPath = maze.flatMap(row => row.split('')).filter(c => c === '.').length;
-    return reachable === totalPath && reachable > 0;
-  };
-
-  do {
-    maze = [];
-    for (let y = 0; y < rows; y++) {
-      let row = "";
-      for (let x = 0; x < cols; x++) {
-        row += (y === 0 || y === rows - 1 || x === 0 || x === cols - 1) ? "#" : (Math.random() < 0.25 ? "#" : ".");
-      }
-      maze.push(row);
+    while (placed < count && reachable.length > 0) {
+      const idx = Math.floor(Math.random() * reachable.length);
+      const [y, x] = reachable.splice(idx, 1)[0];
+      maze[y] = maze[y].substring(0, x) + 'F' + maze[y].substring(x + 1);
+      placed++;
     }
-    maze[1] = maze[1].substring(0, 1) + '.' + maze[1].substring(2);
-  } while (!isValidMaze(maze));
-
-  return maze;
-  }
-
-  function placeFruits(maze, count = 8) {
-  totalFruits = count;
-  let placed = 0;
-  const directions = [[1,0],[-1,0],[0,1],[0,-1]];
-  const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
-  const reachable = [];
-  const queue = [[1, 1]];
-  visited[1][1] = true;
-
-  while (queue.length) {
-    const [y, x] = queue.shift();
-    if (maze[y][x] === '.') reachable.push([y, x]);
-    for (let [dy, dx] of directions) {
-      const ny = y + dy, nx = x + dx;
-      if (ny >= 0 && ny < rows && nx >= 0 && nx < cols && !visited[ny][nx] && maze[ny][nx] === '.') {
-        visited[ny][nx] = true;
-        queue.push([ny, nx]);
-      }
-    }
-  }
-
-  while (placed < count && reachable.length > 0) {
-    const idx = Math.floor(Math.random() * reachable.length);
-    const [y, x] = reachable.splice(idx, 1)[0];
-    maze[y] = maze[y].substring(0, x) + 'F' + maze[y].substring(x + 1);
-    placed++;
-  }
-  return maze;
+    return maze;
   }
 
   function resetGame() {
@@ -263,13 +264,13 @@
   }
 
   function selectCharacter(imgSrc) {
-  player.img = new Image();
-  player.img.onload = () => {
-    characterSelect.style.display = "none";
-    tryPlayMusic();
-    resetGame();
-  };
-  player.img.src = imgSrc;
+    player.img = new Image();
+    player.img.onload = () => {
+      characterSelect.style.display = "none";
+      tryPlayMusic();
+      resetGame();
+    };
+    player.img.src = imgSrc;
   }
 
   function moveAnt(bee) {
@@ -289,7 +290,7 @@
     }
     if ((bee.x === player.x && bee.y === player.y)) {
       beeSound.play();
-      alert("🐜 개미에게 잡혔어요! 게임 오버!");
+      alert("🐜 벌에게 잡혔어요! 게임 오버!");
       gameOver = true;
       clearInterval(antInterval);
     }
